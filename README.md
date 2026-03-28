@@ -80,7 +80,7 @@ The outcome surface interpolates between a purely linear and a fully nonlinear f
 
 When the outcome is linear all estimators perform well. As $\alpha$ increases OLS accumulates bias steadily, explaining only half the outcome variance by $\alpha=1.0$.
 
-- Flexible RO improves relative to OLS since its random forest outcome models handle complex surfaces better than a linear model.
+- Flexible RO improves relative to OLS since its random forest outcome models handle complex surfaces better than a linear model (even though it carries a confounding bias from the selected training subsamples).
 - IPW is largely unaffected, relying on no outcome model at all.
 - AIPW holds up better than DML despite also using LassoCV internally, with the propensity correction partially compensating for outcome model misspecification consistent with its doubly robust design.
 - DML with linear nuisance models degrades unexpectedly, revealing that its performance is contingent on first-stage model quality. Replacing LassoCV with a random forest in the DML nuisance step recovers near-zero bias throughout.
