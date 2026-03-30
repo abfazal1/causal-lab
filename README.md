@@ -84,7 +84,7 @@ $\alpha$. Treatment assignment is fixed throughout.
 - **OLS** accumulates bias steadily as functional form misspecification grows.
 - **IPW** is largely unaffected, relying on no outcome model.
 - **Flexible RO** starts with the highest bias (driven by skewed training
-  subsamples) but improves as nonlinearity increases — forest flexibility
+  subsamples) but improves as nonlinearity increases, suggesting that forest flexibility
   becomes a genuine advantage that outweighs the confounding bias.
 - **AIPW** holds up better than DML, with the propensity correction partially
   compensating for outcome model misspecification.
@@ -103,15 +103,23 @@ confounder.
 
 - **OLS** and **DML** remain flat throughout. OLS benefits from the linear DGP.
   DML's LassoCV nuisance models down-weight noise covariates consistently.
-- **IPW** drifts gradually as correlated noise confuses propensity estimation.
-- **Flexible RO** accumulates bias steadily as forest splits spread across all
-  covariates including noise.
-- **AIPW** holds up through $p=50$ then deteriorates sharply at $p=100$.
-  Neither IPW nor AIPW have explicit variable selection in their propensity
-  models, leaving both exposed as the noise pool grows.
+- **IPW** bias and RMSE drift gradually as correlated noise increasingly confuses
+  propensity estimation. Without variable selection the propensity model absorbs
+  noise alongside signal.
+- **Flexible RO** carries the highest bias throughout, rising steadily as forest
+  splits spread across all covariates including noise and dilute the informative
+  signal. RMSE is systematically elevated across all $p$ values.
+- **AIPW** holds up at low $p$ but deteriorates from $p=50$ onwards on both
+  bias and RMSE, and rising sharply at $p=100$. Like IPW, its propensity model has no explicit variable
+  selection mechanism and becomes increasingly confused as the noise pool grows.
 
 High dimensionality exposes a fundamental difference between estimators that
-select variables and those that do not.
+select variables and those that do not. 
+
+---
+
+Knowing which method to trust requires knowing which assumptions are most
+likely to hold. This notebook is a step toward making that reasoning explicit.
 
 ---
 
