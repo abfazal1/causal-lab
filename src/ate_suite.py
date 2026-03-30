@@ -31,11 +31,11 @@ def ols(Y, T, X, seed=SEED):
 def ipw(Y, T, X, seed=SEED):
     """
     Horvitz-Thompson IPW estimator.
-    Propensity scores estimated via logistic regression (sklearn).
+    Propensity scores estimated via regularised logistic regression (sklearn).
     Scores are clipped to PS_CLIP for numerical stability.
     """
     ps = (
-        LogisticRegression(random_state=seed)
+        LogisticRegression(C=0.1, random_state=seed) # regularised
         .fit(X, T)
         .predict_proba(X)[:, 1]
     )
@@ -65,7 +65,7 @@ def aipw(Y, T, X, seed=SEED):
     Cross-fitting handled internally by EconML.
     """
     est = LinearDRLearner(
-        model_propensity=LogisticRegression(random_state=seed),
+        model_propensity=LogisticRegression(C=0.1,random_state=seed), # regularised
         model_regression=LassoCV(cv=5, random_state=seed),
         random_state=seed
     )

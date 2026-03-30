@@ -103,3 +103,55 @@ def make_nonlinear_dgp(n=1000, alpha=0.0, true_ate=TRUE_ATE, seed=SEED):
          + rng.standard_normal(n))
 
     return Y, T.astype(float), X, ps
+
+def make_highdim_dgp(n=1000, p=10, k=5, true_ate=TRUE_ATE, seed=SEED):
+    """
+    DGP for the covariate dimensionality scenario.
+
+    Parameters
+    ----------
+    n       : sample size
+    p       : total number of covariates
+    k       : number of informative covariates (first k columns).
+              remaining p-k covariates are noise, weakly correlated
+              with the primary confounder X0.
+    true_ate: ground truth average treatment effect
+    seed    : random seed for reproducibility
+
+    Returns
+    -------
+    Y : array (n,)   observed outcomes
+    T : array (n,)   binary treatment indicator
+    X : array (n, p) pre-treatment covariates, each column iid N(0,1)
+    ps: array (n,)   true propensity scores
+    """
+    rng = np.random.default_rng(seed)
+
+    # k informative covariates drawn independently
+    X_informative = rng.standard_normal((n, k))
+
+    # p-k noise covariates weakly correlated with X0 (the confounder)
+    # rho controls correlation strength — enough to confuse naive methods
+    rho = 0.3
+    noise_base = rng.standard_normal((n, p - k))
+    X_noise = rho * X_informative[:, [0]] + np.sqrt(1 - rho**2) * noise_base
+
+    # full covariate matrix: informative first, then noise
+    X = np.hstack([X_informative, X_noise])
+
+    # treatment assignment: driven by informative covariates only
+    # healthy overlap fixed throughout
+    ps = expit(X[:, 0] + 0.3 * X[:, 1] - 0.2 * X[:, 2])
+    T  = rng.binomial(1, ps)
+
+    # outcome: driven by informative covariates only
+    # noise variables have zero true effect but are correlated with X0
+    Y = (true_ate * T
+         + 3 * X[:, 0]        # shared confounder, linear
+         + 2 * X[:, 1]        # informative, linear
+         + 1.5 * X[:, 2]      # informative, linear
+         + 1.0 * X[:, 3]      # informative, linear
+         + 0.5 * X[:, 4]      # informative, linear
+         + rng.standard_normal(n))
+
+    return Y, T.astype(float), X, ps

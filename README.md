@@ -13,27 +13,27 @@
 ## What is the project about?
 
 Popular causal inference methods in econometrics and biostatistics are largely
-designed to overcome the problem of unobserved confounders. For instance:
-- Difference-in-differences
-exploits parallel trends to difference out time-invariant unobservables. 
-- Regression
-discontinuity leverages quasi-random variation near a threshold. 
-- Instrumental
-variables find exogenous variation that bypasses the confounded channel entirely.
+designed to solve one problem: unobserved confounders. Difference-in-differences,
+regression discontinuity, instrumental variables — each is a methodological
+response to the fact that we cannot observe everything that drives both treatment
+and outcome. The ingenuity of these methods lies in finding structure that lets
+us identify causal effects despite incomplete information.
 
-Each is a methodological response to the same fundamental problem: we cannot observe everything that drives both treatment and outcome.
+But what happens when we observe everything? Or even much more than we need to?
+This is the selection-on-observables setting, where all relevant confounders are
+measured and the identification problem is, in principle, solved. Condition on $X$
+and recover the treatment effect. It should be the easy case.
 
-The selection-on-observables framework sets that problem aside. No instruments,
-no panel structure, no unobserved confounders — just condition on X and recover
-the treatment effect. In an ideal world where all relevant confounders are
-measured, this should be the easy case. In practice, even this idealised setting
-produces unreliable estimates when standard methods are applied naively.
+In practice it is not. Even with full observability, naive methods can fail e.g. through propensity score instability,
+functional form misspecification or the curse of dimensionality. The machinery still matters.
 
-This project stress tests five popular ATE estimators under controlled synthetic DGPs where the ground truth is known. Each scenario isolates a single structural feature — propensity score overlap, outcome nonlinearity, and covariate dimensionality — and degrades each systematically while holding everything else fixed. This allows failures to be attributed cleanly to the estimator's design rather than incidental data problems.
+This project stress tests five popular ATE estimators under controlled synthetic
+DGPs where the ground truth is known. Each scenario isolates a single structural
+feature and degrades it systematically while holding everything else fixed,
+allowing failures to be attributed cleanly to the estimator's design rather than
+incidental data problems.
 
-The central question:
-
-> When we observe all the relevant confounders, which methods reliably recover the true treatment effect — and which ones fail, and why?
+> When we observe all the relevant confounders, which methods reliably recover the true treatment effect and which ones fail (and why)?
 
 ---
 
@@ -55,7 +55,7 @@ All estimators are implemented in `src/ate_suite.py` with fixed specifications a
 
 ## Scenarios and Key Findings
 
-### Scenario 1: Propensity Score Overlap
+### Scenario 1: Overlap Degradation
 
 Overlap is degraded by scaling the log-odds of treatment assignment by $\gamma$. At low $\gamma$ assignment is near-random. At high $\gamma$ treated and control units occupy largely separate regions of covariate space.
 
@@ -63,35 +63,73 @@ Overlap is degraded by scaling the log-odds of treatment assignment by $\gamma$.
 
 When overlap is healthy all five estimators recover the true ATE reasonably well. As overlap degrades, estimators fail in distinct ways.
 
-- Flexible RO accumulates the largest bias since without any selection correction its outcome models extrapolate across covariate regions they were never trained on.
-- IPW fails through weight explosion: as propensity scores polarise, a shrinking set of boundary units dominates the estimate.
-- AIPW preserves near-zero bias throughout but variance inflates sharply at high $\gamma$, making it unreliable on any single dataset even when correct on average.
-- OLS and DML are the most resilient. OLS because the primary confounder enters linearly and is directly controlled, DML because it avoids propensity weighting entirely through residualisation.
+- OLS and DML remain flat throughout.
+- Flexible RO and IPW accumulate the largest bias: Flexible RO because its forests extrapolate into covariate regions
+they were never trained on, IPW because extreme propensity weights concentrate influence on a shrinking set of boundary units.
+- AIPW keeps bias near zero but variance grows at high $\gamma$, reflecting weight instability in the doubly robust correction rather than systematic misdirection. 
 
-This demonstrates that overlap violation does not affect all estimators equally: the failure mode depends entirely on whether the estimator relies on propensity weighting, outcome modelling, or both.
+This demonstrates that the failure mode depends entirely on whether the estimator relies on propensity weighting, outcome modelling, or both.
 
 ---
 
 ### Scenario 2: Outcome Nonlinearity
 
-The outcome surface interpolates between a purely linear and a fully nonlinear function via a mixing parameter $\alpha$. Treatment assignment is held fixed with healthy overlap so that functional form complexity is the only active stressor.
+The outcome surface interpolates between a purely linear and a fully nonlinear
+function via $\alpha$. Treatment assignment is fixed throughout so that functional
+form complexity is the only active stressor.
 
 ![Bias and RMSE: Nonlinearity Scenario](images/nonlinear_bias_rmse.png)
 
-When the outcome is linear all estimators perform well. As $\alpha$ increases OLS accumulates bias steadily, explaining only half the outcome variance by $\alpha=1.0$.
+At $\alpha=0$ all estimators perform well on bias. As nonlinearity increases
+the picture shifts in a revealing way.
 
-- Flexible RO improves relative to OLS since its random forest outcome models handle complex surfaces better than a linear model (even though it carries a confounding bias from the selected training subsamples).
-- IPW is largely unaffected, relying on no outcome model at all.
-- AIPW holds up better than DML despite also using LassoCV internally, with the propensity correction partially compensating for outcome model misspecification consistent with its doubly robust design.
-- DML with linear nuisance models degrades unexpectedly, revealing that its performance is contingent on first-stage model quality. Replacing LassoCV with a random forest in the DML nuisance step recovers near-zero bias throughout.
+- OLS accumulates bias and RMSE steadily as functional form misspecification grows.
+- IPW is largely unaffected on bias, relying on no outcome model at all, though
+  its RMSE stays elevated throughout due to propensity estimation variance.
+- Flexible RO starts with the highest bias and RMSE at $\alpha=0$ (driven by
+  skewed training subsamples) but both improve as nonlinearity increases. Forest
+  flexibility becomes a genuine advantage that outweighs the confounding bias
+  from skewed support, and by $\alpha=1.0$ its RMSE is among the lowest.
+- AIPW holds up better than DML on bias. The propensity correction partially
+  compensates for outcome model misspecification consistent with its doubly
+  robust design.
+- DML degrades on both bias and RMSE at high $\alpha$, revealing that its
+  LassoCV nuisance model cannot fit a nonlinear outcome surface. Replacing it
+  with a random forest recovers near-zero bias throughout (see Section 2c).
 
-This demonstrates that when the outcome surface is genuinely nonlinear, flexibility in the estimation procedure matters as much as the theoretical guarantees behind it. Even doubly robust and cross-fitted methods like DML can degrade if their nuisance models are too rigid to approximate the true surface.
+Notably all estimators converge to similar RMSE values around $0.15$ to $0.17$
+at $\alpha=1.0$, suggesting that at full nonlinearity the remaining variance is
+driven by the outcome complexity itself rather than estimator design. Even doubly
+robust and cross-fitted methods degrade if their nuisance models are too rigid.
 
 ---
 
-### Scenario 3: Covariate Dimensionality
+### Scenario 3: High Dimensionality
 
-TBC
+The covariate space grows from $p=5$ to $p=200$ while the number of truly
+informative covariates stays fixed at $k=5$. Noise covariates are weakly
+correlated with the primary confounder, making them look relevant to naive methods.
+
+![Bias and RMSE: Dimensionality Scenario](images/highdim_bias_rmse.png)
+
+At $p=5$ all estimators perform well. As dimensionality grows the picture splits.
+
+- Flexible RO accumulates bias steadily throughout. Random forest splits spread
+  across all $p$ covariates, diluting the informative signal and producing
+  increasingly unreliable counterfactual predictions.
+- IPW drifts gradually as the correlated noise covariates begin to confuse the
+  propensity model at higher dimensions.
+- AIPW holds up through $p=100$ but deteriorates sharply at $p=200$, with RMSE
+  spiking to nearly $5.0$. The propensity model cannot separate true confounders
+  from correlated noise at high dimensions, destabilising the IPW correction term.
+- OLS and DML remain flat on both bias and RMSE throughout. OLS is well-suited
+  to this linear DGP by construction. DML's LassoCV nuisance models identify and
+  down-weight the noise covariates, keeping the residualised estimate clean across
+  all $p$ values.
+
+High dimensionality exposes a fundamental difference between estimators that
+select variables and those that do not. Methods relying on unregularised or
+poorly regularised propensity models are particularly vulnerable.
 
 ---
 
