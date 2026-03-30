@@ -103,12 +103,12 @@ confounder.
 
 - **OLS** and **DML** remain flat throughout. OLS benefits from the linear DGP.
   DML's LassoCV nuisance models down-weight noise covariates consistently.
-- **IPW** drifts gradually as correlated noise confuses propensity estimation without explicit regularisation.
+- **IPW** drifts gradually as correlated noise confuses propensity estimation.
 - **Flexible RO** accumulates bias steadily as forest splits spread across all
   covariates including noise.
-- **AIPW** holds up through $p=50$ then deteriorates sharply, with RMSE
-  spiking at $p=100$ as the propensity model fails to separate
-  signal from correlated noise without explicit regularisation.
+- **AIPW** holds up through $p=50$ then deteriorates sharply at $p=100$.
+  Neither IPW nor AIPW have explicit variable selection in their propensity
+  models, leaving both exposed as the noise pool grows.
 
 High dimensionality exposes a fundamental difference between estimators that
 select variables and those that do not.
