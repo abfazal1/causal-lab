@@ -57,79 +57,61 @@ All estimators are implemented in `src/ate_suite.py` with fixed specifications a
 
 ### Scenario 1: Overlap Degradation
 
-Overlap is degraded by scaling the log-odds of treatment assignment by $\gamma$. At low $\gamma$ assignment is near-random. At high $\gamma$ treated and control units occupy largely separate regions of covariate space.
+Overlap is degraded by scaling the log-odds of treatment assignment by $\gamma$.
+At low $\gamma$ assignment is near-random. At high $\gamma$ treated and control
+units occupy largely separate regions of covariate space.
 
 ![Bias and RMSE: Overlap Scenario](images/overlap_bias_rmse.png)
 
-When overlap is healthy all five estimators recover the true ATE reasonably well. As overlap degrades, estimators fail in distinct ways.
-
-- OLS and DML remain flat throughout.
-- Flexible RO and IPW accumulate the largest bias: Flexible RO because its forests extrapolate into covariate regions
-they were never trained on, IPW because extreme propensity weights concentrate influence on a shrinking set of boundary units.
-- AIPW keeps bias near zero but variance grows at high $\gamma$, reflecting weight instability in the doubly robust correction rather than systematic misdirection. 
-
-This demonstrates that the failure mode depends entirely on whether the estimator relies on propensity weighting, outcome modelling, or both.
+- **OLS** and **DML** remain flat throughout. OLS controls for the primary
+  confounder directly. DML avoids propensity weighting entirely through
+  residualisation.
+- **IPW** and **Flexible RO** accumulate the largest bias. IPW through weight
+  explosion as propensity scores polarise. Flexible RO because its forests
+  extrapolate into covariate regions they were never trained on.
+- **AIPW** keeps bias near zero but RMSE grows at high $\gamma$, reflecting
+  variance inflation from unstable weights rather than systematic misdirection.
 
 ---
 
 ### Scenario 2: Outcome Nonlinearity
 
-The outcome surface interpolates between a purely linear and a fully nonlinear
-function via $\alpha$. Treatment assignment is fixed throughout so that functional
-form complexity is the only active stressor.
+The outcome surface interpolates between purely linear and fully nonlinear via
+$\alpha$. Treatment assignment is fixed throughout.
 
 ![Bias and RMSE: Nonlinearity Scenario](images/nonlinear_bias_rmse.png)
 
-At $\alpha=0$ all estimators perform well on bias. As nonlinearity increases
-the picture shifts in a revealing way.
-
-- OLS accumulates bias and RMSE steadily as functional form misspecification grows.
-- IPW is largely unaffected on bias, relying on no outcome model at all, though
-  its RMSE stays elevated throughout due to propensity estimation variance.
-- Flexible RO starts with the highest bias and RMSE at $\alpha=0$ (driven by
-  skewed training subsamples) but both improve as nonlinearity increases. Forest
-  flexibility becomes a genuine advantage that outweighs the confounding bias
-  from skewed support, and by $\alpha=1.0$ its RMSE is among the lowest.
-- AIPW holds up better than DML on bias. The propensity correction partially
-  compensates for outcome model misspecification consistent with its doubly
-  robust design.
-- DML degrades on both bias and RMSE at high $\alpha$, revealing that its
-  LassoCV nuisance model cannot fit a nonlinear outcome surface. Replacing it
-  with a random forest recovers near-zero bias throughout (see Section 2c).
-
-Notably all estimators converge to similar RMSE values around $0.15$ to $0.17$
-at $\alpha=1.0$, suggesting that at full nonlinearity the remaining variance is
-driven by the outcome complexity itself rather than estimator design. Even doubly
-robust and cross-fitted methods degrade if their nuisance models are too rigid.
+- **OLS** accumulates bias steadily as functional form misspecification grows.
+- **IPW** is largely unaffected, relying on no outcome model.
+- **Flexible RO** starts with the highest bias (driven by skewed training
+  subsamples) but improves as nonlinearity increases — forest flexibility
+  becomes a genuine advantage that outweighs the confounding bias.
+- **AIPW** holds up better than DML, with the propensity correction partially
+  compensating for outcome model misspecification.
+- **DML** degrades at high $\alpha$ because LassoCV cannot fit a nonlinear
+  surface. Replacing it with a random forest recovers near-zero bias (see notebook).
 
 ---
 
 ### Scenario 3: High Dimensionality
 
-The covariate space grows from $p=5$ to $p=200$ while the number of truly
-informative covariates stays fixed at $k=5$. Noise covariates are weakly
-correlated with the primary confounder, making them look relevant to naive methods.
+The covariate space grows from $p=5$ to $p=100$ while informative covariates
+stay fixed at $k=5$. Noise covariates are weakly correlated with the primary
+confounder.
 
 ![Bias and RMSE: Dimensionality Scenario](images/highdim_bias_rmse.png)
 
-At $p=5$ all estimators perform well. As dimensionality grows the picture splits.
-
-- Flexible RO accumulates bias steadily throughout. Random forest splits spread
-  across all $p$ covariates, diluting the informative signal and producing
-  increasingly unreliable counterfactual predictions.
-- IPW drifts gradually as the correlated noise covariates begin to confuse the
-  propensity model at higher dimensions.
-- AIPW holds up through $p=100$ but deteriorates sharply at $p=200$, with RMSE
-  spiking to nearly $5.0$. The propensity model cannot separate true confounders
-  from correlated noise at high dimensions, destabilising the IPW correction term.
-- OLS and DML remain flat on both bias and RMSE throughout. OLS is well-suited
-  to this linear DGP by construction. DML's LassoCV nuisance models identify and
-  down-weight the noise covariates, keeping the residualised estimate clean across
-  all $p$ values.
+- **OLS** and **DML** remain flat throughout. OLS benefits from the linear DGP.
+  DML's LassoCV nuisance models down-weight noise covariates consistently.
+- **IPW** drifts gradually as correlated noise confuses propensity estimation without explicit regularisation.
+- **Flexible RO** accumulates bias steadily as forest splits spread across all
+  covariates including noise.
+- **AIPW** holds up through $p=50$ then deteriorates sharply, with RMSE
+  spiking at $p=100$ as the propensity model fails to separate
+  signal from correlated noise without explicit regularisation.
 
 High dimensionality exposes a fundamental difference between estimators that
-select variables and those that do not. Methods relying on unregularised or
-poorly regularised propensity models are particularly vulnerable.
+select variables and those that do not.
 
 ---
 
