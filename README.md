@@ -136,4 +136,6 @@ causal-lab/
 
 ---
 
-*Knowing all the confounders does not solve your problems. It just changes which problems you have.*
+## Disclaimer
+
+*This project is an exploratory experiment. All results are specific to the DGP specifications, sample sizes, estimator implementations, and random seeds used here, and should not be interpreted as general or theoretical conclusions about estimator performance.*
