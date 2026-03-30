@@ -52,14 +52,9 @@ units occupy largely separate regions of covariate space.
 
 ![Bias and RMSE: Overlap Scenario](images/overlap_bias_rmse.png)
 
-- **OLS** and **DML** remain flat throughout. OLS controls for the primary
-  confounder directly. DML avoids propensity weighting entirely through
-  residualisation.
-- **IPW** and **Flexible RO** accumulate the largest bias. 
-  - IPW through weight explosion as propensity scores polarise. 
-  - Flexible RO because treated and control forests are trained on increasingly separated supports, making predictions unstable in poorly represented regions
-- **AIPW** keeps bias near zero but RMSE grows at high $\gamma$, reflecting
-  variance inflation from unstable weights rather than systematic misdirection.
+- **OLS** and **DML** remain broadly stable throughout. OLS shows near-zero bias with only a modest increase in RMSE, while DML stays close to zero bias and exhibits similarly little deterioration as overlap worsens.
+- **IPW** and **Flexible RO** accumulate the largest bias and RMSE. IPW deteriorates through weight explosion as propensity scores polarise, while Flexible RO struggles because treated and control forests are trained on increasingly separated supports, making predictions unstable in poorly represented regions.
+- **AIPW** keeps bias close to zero across most of the grid, but RMSE rises sharply at high $\gamma$, reflecting variance inflation from unstable weights rather than systematic bias.
 
 ---
 
@@ -70,13 +65,11 @@ $\alpha$. Treatment assignment is fixed throughout.
 
 ![Bias and RMSE: Nonlinearity Scenario](images/nonlinear_bias_rmse.png)
 
-- **OLS** accumulates bias steadily as functional form misspecification grows.
-- **IPW** is largely unaffected, relying on no outcome model.
-- **Flexible RO** starts with the highest bias (driven by skewed training
-  subsamples) but improves as nonlinearity increases, suggesting that forest flexibility
-  becomes a genuine advantage that outweighs the confounding bias.
-- **AIPW** holds up better than DML, with the propensity correction partially compensating for outcome model misspecification.
-- **DML** degrades at high $\alpha$ because LassoCV cannot fit a nonlinear surface. Replacing it with a random forest recovers near-zero bias (see notebook).
+- **OLS** accumulates bias and RMSE steadily as functional form misspecification grows.
+- **IPW** is largely unaffected, relying on no outcome model. Its bias remains low and stable throughout, while RMSE increases only modestly with $\alpha$.
+- **Flexible RO** starts with the highest bias and RMSE, but improves markedly as nonlinearity increases, suggesting that forest flexibility becomes a genuine advantage once the outcome surface departs sufficiently from linearity.
+- **AIPW** holds bias near zero across the grid and performs better than DML on bias at high $\alpha$, but its RMSE rises steadily and remains among the highest in the nonlinear regime.
+- **DML** degrades as $\alpha$ increases because LassoCV cannot fit a nonlinear outcome surface. Bias and RMSE both rise sharply at high $\alpha$, although replacing the linear nuisance model with a random forest restores near-zero bias (see notebook).
 
 ---
 
@@ -88,18 +81,10 @@ confounder.
 
 ![Bias and RMSE: Dimensionality Scenario](images/highdim_bias_rmse.png)
 
-- **OLS** and **DML** remain flat throughout. 
-  - OLS benefits from the linear DGP.
-  - DML's LassoCV nuisance models down-weight noise covariates consistently.
-- **IPW** bias and RMSE drift gradually as correlated noise increasingly confuses
-  propensity estimation. Without variable selection the propensity model absorbs
-  noise alongside signal.
-- **Flexible RO** carries the highest bias throughout, rising steadily as forest
-  splits spread across all covariates including noise and dilute the informative
-  signal. RMSE is systematically elevated across all $p$ values.
-- **AIPW** holds up at low $p$ but deteriorates from $p=50$ onwards on both bias and RMSE, with performance deterioratingh sharply at $p=100$. Like IPW, its propensity model has no explicit variable  selection mechanism and becomes increasingly confused as the noise pool grows.
-
-High dimensionality exposes a fundamental difference between estimators that select variables and those that do not. 
+- **OLS** and **DML** remain broadly flat throughout. OLS performs well because the DGP is linear and correctly specified, while DML’s LassoCV nuisance models down-weight noise covariates effectively.
+- **IPW** bias and RMSE drift gradually upward as correlated noise increasingly confuses propensity estimation. Without variable selection, the propensity model absorbs noise alongside signal.
+- **Flexible RO** carries the highest bias throughout, rising steadily as forest splits spread across both informative and noise covariates, diluting the signal. RMSE is systematically elevated across all $p$ values.
+- **AIPW** holds up at low $p$ but deteriorates from $p=50$ onwards on both bias and RMSE, with performance worsening sharply at $p=100$. Like IPW, its propensity component has no explicit variable selection mechanism and becomes increasingly unstable as the noise pool grows.
 
 ---
 
