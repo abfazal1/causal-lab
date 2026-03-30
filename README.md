@@ -5,35 +5,24 @@
 ## Summary
 
 - Benchmarks five causal estimators on their ability to recover a known average treatment effect (ATE = 2.0) from synthetic data where all confounders are observed by construction.
-- Evaluates performance across three DGP scenarios — propensity score overlap, outcome nonlinearity, and covariate dimensionality — each with a systematic knob modulating stress intensity.
+- Evaluates performance across three DGP scenarios: (i) overlap degradation; (ii) outcome nonlinearity; and (iii) high dimensionality — each with a systematic knob modulating stress intensity.
 - Demonstrates that even in the selection-on-observables setting, naive methods fail in distinct and predictable ways depending on the structural feature under stress.
 
 ---
 
 ## What is the project about?
 
-Popular causal inference methods in econometrics and biostatistics are largely
-designed to solve one problem: unobserved confounders. Difference-in-differences,
-regression discontinuity, instrumental variables — each is a methodological
-response to the fact that we cannot observe everything that drives both treatment
-and outcome. The ingenuity of these methods lies in finding structure that lets
-us identify causal effects despite incomplete information.
+Causal inference methods address two distinct challenges: identification and estimation. Design-based approaches such as difference-in-differences, regression discontinuity, and instrumental variables target the identification problem by recovering causal effects in the presence of unobserved confounding. 
 
 But what happens when we observe everything? Or even much more than we need to?
-This is the selection-on-observables setting, where all relevant confounders are
-measured and the identification problem is, in principle, solved. Condition on $X$
-and recover the treatment effect. It should be the easy case.
 
-In practice it is not. Even with full observability, naive methods can fail e.g. through propensity score instability,
-functional form misspecification or the curse of dimensionality. The machinery still matters.
+This is the selection-on-observables setting, where all relevant confounders are measured and the identification problem is, in principle, solved. Conditional on $X$, treatment is as good as random, and the causal effect is identified. What remains is not an identification problem, but an estimation problem.
 
-This project stress tests five popular ATE estimators under controlled synthetic
-DGPs where the ground truth is known. Each scenario isolates a single structural
-feature and degrades it systematically while holding everything else fixed,
-allowing failures to be attributed cleanly to the estimator's design rather than
-incidental data problems.
+In practice, this “easy case” is not easy at all. Even with full observability, naive methods can fail through structural issues such as propensity score instability, functional form misspecification, or the curse of dimensionality. The choice of estimator and the assumptions it embeds still matter.
 
-> When we observe all the relevant confounders, which methods reliably recover the true treatment effect and which ones fail (and why)?
+This project stress tests five popular ATE estimators under controlled synthetic DGPs where the ground truth is known. Each scenario isolates a single structural feature and degrades it systematically while holding everything else fixed, allowing failures to be attributed cleanly to the estimator’s design rather than incidental data problems.
+
+> When identification is guaranteed, which estimators remain robust as key structural features of the data (namely overlap, functional form, and dimensionality) are systematically stressed?
 
 ---
 
@@ -66,9 +55,9 @@ units occupy largely separate regions of covariate space.
 - **OLS** and **DML** remain flat throughout. OLS controls for the primary
   confounder directly. DML avoids propensity weighting entirely through
   residualisation.
-- **IPW** and **Flexible RO** accumulate the largest bias. IPW through weight
-  explosion as propensity scores polarise. Flexible RO because its forests
-  extrapolate into covariate regions they were never trained on.
+- **IPW** and **Flexible RO** accumulate the largest bias. 
+  - IPW through weight explosion as propensity scores polarise. 
+  - Flexible RO because treated and control forests are trained on increasingly separated supports, making predictions unstable in poorly represented regions
 - **AIPW** keeps bias near zero but RMSE grows at high $\gamma$, reflecting
   variance inflation from unstable weights rather than systematic misdirection.
 
@@ -86,10 +75,8 @@ $\alpha$. Treatment assignment is fixed throughout.
 - **Flexible RO** starts with the highest bias (driven by skewed training
   subsamples) but improves as nonlinearity increases, suggesting that forest flexibility
   becomes a genuine advantage that outweighs the confounding bias.
-- **AIPW** holds up better than DML, with the propensity correction partially
-  compensating for outcome model misspecification.
-- **DML** degrades at high $\alpha$ because LassoCV cannot fit a nonlinear
-  surface. Replacing it with a random forest recovers near-zero bias (see notebook).
+- **AIPW** holds up better than DML, with the propensity correction partially compensating for outcome model misspecification.
+- **DML** degrades at high $\alpha$ because LassoCV cannot fit a nonlinear surface. Replacing it with a random forest recovers near-zero bias (see notebook).
 
 ---
 
@@ -101,25 +88,26 @@ confounder.
 
 ![Bias and RMSE: Dimensionality Scenario](images/highdim_bias_rmse.png)
 
-- **OLS** and **DML** remain flat throughout. OLS benefits from the linear DGP.
-  DML's LassoCV nuisance models down-weight noise covariates consistently.
+- **OLS** and **DML** remain flat throughout. 
+  - OLS benefits from the linear DGP.
+  - DML's LassoCV nuisance models down-weight noise covariates consistently.
 - **IPW** bias and RMSE drift gradually as correlated noise increasingly confuses
   propensity estimation. Without variable selection the propensity model absorbs
   noise alongside signal.
 - **Flexible RO** carries the highest bias throughout, rising steadily as forest
   splits spread across all covariates including noise and dilute the informative
   signal. RMSE is systematically elevated across all $p$ values.
-- **AIPW** holds up at low $p$ but deteriorates from $p=50$ onwards on both
-  bias and RMSE, and rising sharply at $p=100$. Like IPW, its propensity model has no explicit variable
-  selection mechanism and becomes increasingly confused as the noise pool grows.
+- **AIPW** holds up at low $p$ but deteriorates from $p=50$ onwards on both bias and RMSE, with performance deterioratingh sharply at $p=100$. Like IPW, its propensity model has no explicit variable  selection mechanism and becomes increasingly confused as the noise pool grows.
 
-High dimensionality exposes a fundamental difference between estimators that
-select variables and those that do not. 
+High dimensionality exposes a fundamental difference between estimators that select variables and those that do not. 
 
 ---
 
-Knowing which method to trust requires knowing which assumptions are most
-likely to hold. This notebook is a step toward making that reasoning explicit.
+## Key Takeaway
+
+When all relevant confounders are observed, the challenge of causal inference does not disappear, it just shifts from identification to estimation.
+
+This project makes that shift explicit by showing that estimator choice is ultimately a question of which assumptions are most credible, and which failure modes are most tolerable, in a given data environment.
 
 ---
 
