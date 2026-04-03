@@ -12,33 +12,33 @@
 
 ## What is the project about?
 
-Causal inference methods address two distinct challenges: identification and estimation. Design-based approaches such as difference-in-differences, regression discontinuity, and instrumental variables target the identification problem by recovering causal effects in the presence of unobserved confounding. 
+Causal inference methods address two distinct challenges: identification and estimation. Design-based approaches such as difference-in-differences, regression discontinuity, and instrumental variables are primarily concerned with identification: recovering causal effects in settings where unobserved confounding may be present.
 
-But what happens when we observe everything? Or even much more than we need to?
+But what happens when we observe everything? Or even more than we need to?
 
-This is the selection-on-observables setting, where all relevant confounders are measured and the identification problem is, in principle, solved. Conditional on $X$, treatment is as good as random, and the causal effect is identified. What remains is not an identification problem, but an estimation problem.
+This is the selection-on-observables setting, where all relevant confounders are assumed to be measured, so the identification problem is, in principle, resolved. Conditional on $X$, treatment is as good as random, and the causal effect is identified. What remains is the estimation problem: how best to recover that effect in finite samples.
 
-In practice, this “easy case” is not easy at all. Even with full observability, naive methods can fail through structural issues such as propensity score instability, functional form misspecification, or the curse of dimensionality. The choice of estimator and the assumptions it embeds still matter.
+In practice, however, this “easy case” is often less straightforward than it appears. Even with full observability, estimators can still perform poorly because of structural issues such as propensity score instability, functional form misspecification, or high-dimensional covariate spaces. The choice of estimator, and the assumptions built into it, still matter.
 
-This project stress tests five popular ATE estimators under controlled synthetic DGPs where the ground truth is known. Each scenario isolates a single structural feature and degrades it systematically while holding everything else fixed, allowing failures to be attributed cleanly to the estimator’s design rather than incidental data problems.
+This project stress-tests five popular ATE estimators under controlled synthetic DGPs where the ground truth is known. Each scenario isolates a single structural feature and varies it systematically while holding the others fixed, making it easier to relate estimator performance to specific design features rather than incidental quirks of the data.
 
-> When identification is guaranteed, which estimators remain robust as key structural features of the data (namely overlap, functional form, and dimensionality) are systematically stressed?
+> When identification is available under selection on observables, which estimators remain most reliable as key structural features of the data — overlap, functional form, and dimensionality — are systematically stressed?
 
 ---
 
 ## Estimator Suite
 
-Five estimators are evaluated, spanning naive baselines to doubly robust and cross-fitted methods:
+Five estimators are evaluated, spanning simple regression-based methods through to doubly robust and cross-fitted approaches:
 
 | Estimator | Description |
 |---|---|
-| **OLS** | Linear regression via `statsmodels`. Treatment effect as coefficient on T. |
-| **IPW** | Horvitz-Thompson reweighting via logistic propensity scores (`sklearn`). |
-| **Flexible RO** | T-learner with two Random Forest outcome models (`sklearn`). |
+| **OLS** | Linear regression via `statsmodels`, with the treatment effect recovered as the coefficient on `T`. |
+| **IPW** | Horvitz-Thompson reweighting using logistic propensity scores from `sklearn`. |
+| **Flexible RO** | T-learner with two Random Forest outcome models from `sklearn`. |
 | **AIPW** | Doubly robust estimator via `econml.dr.LinearDRLearner`. |
-| **DML** | Double Machine Learning via `econml.dml.LinearDML` with cross-fitted LassoCV nuisance models. |
+| **DML** | Double Machine Learning via `econml.dml.LinearDML` with cross-fitted nuisance models. |
 
-All estimators are implemented in `src/ate_suite.py` with fixed specifications across all scenarios.
+All estimators are implemented in `src/ate_suite.py` with fixed specifications across scenarios.
 
 ---
 
@@ -47,14 +47,15 @@ All estimators are implemented in `src/ate_suite.py` with fixed specifications a
 ### Scenario 1: Overlap Degradation
 
 Overlap is degraded by scaling the log-odds of treatment assignment by $\gamma$.
-At low $\gamma$ assignment is near-random. At high $\gamma$ treated and control
-units occupy largely separate regions of covariate space.
+At low $\gamma$, assignment is close to random and treated and control units have
+substantial overlap in propensity scores. As $\gamma$ increases, the score
+distributions become more separated and common support weakens.
 
 ![Bias and RMSE: Overlap Scenario](images/overlap_bias_rmse.png)
 
-- **OLS** and **DML** remain broadly stable throughout. OLS shows near-zero bias with only a modest increase in RMSE, while DML stays close to zero bias and exhibits similarly little deterioration as overlap worsens.
-- **IPW** and **Flexible RO** accumulate the largest bias and RMSE. IPW deteriorates through weight explosion as propensity scores polarise, while Flexible RO struggles because treated and control forests are trained on increasingly separated supports, making predictions unstable in poorly represented regions.
-- **AIPW** keeps bias close to zero across most of the grid, but RMSE rises sharply at high $\gamma$, reflecting variance inflation from unstable weights rather than systematic bias.
+- **OLS** and **DML** appear comparatively stable throughout.  OLS remains close to zero bias with only a modest increase in RMSE, while DML also stays near zero bias and is among the more stable estimators as overlap deteriorates.
+- **IPW** and **Flexible RO** show the clearest deterioration as $\gamma$ rises. IPW becomes increasingly sensitive to extreme propensity scores, while Flexible RO appears to struggle as the treated and control outcome models are asked to predict more often in weakly represented regions of the covariate space.
+- **AIPW** remains close to unbiased over much of the grid, but its RMSE rises at higher $\gamma$, which is consistent with growing instability as overlap worsens even when average bias remains relatively limited.
 
 ---
 
@@ -65,11 +66,11 @@ $\alpha$. Treatment assignment is fixed throughout.
 
 ![Bias and RMSE: Nonlinearity Scenario](images/nonlinear_bias_rmse.png)
 
-- **OLS** accumulates bias and RMSE steadily as functional form misspecification grows.
-- **IPW** is largely unaffected, relying on no outcome model. Its bias remains low and stable throughout, while RMSE increases only modestly with $\alpha$.
-- **Flexible RO** starts with the highest bias and RMSE, but improves markedly as nonlinearity increases, suggesting that forest flexibility becomes a genuine advantage once the outcome surface departs sufficiently from linearity.
-- **AIPW** holds bias near zero across the grid and performs better than DML on bias at high $\alpha$, but its RMSE rises steadily and remains among the highest in the nonlinear regime.
-- **DML** degrades as $\alpha$ increases because LassoCV cannot fit a nonlinear outcome surface. Bias and RMSE both rise sharply at high $\alpha$, although replacing the linear nuisance model with a random forest restores near-zero bias (see notebook).
+- **OLS** shows a clear increase in bias and RMSE as $\alpha$ rises, which is consistent with growing misspecification as the outcome surface becomes less linear.
+- **IPW** is comparatively insensitive to $\alpha$ in this setting because it does not model the outcome directlyand its bias and RMSE remain fairly stable across the grid.
+- **Flexible RO** begins with the highest bias and RMSE at low $\alpha$, but improves noticeably as the outcome surface becomes more nonlinear. In context of these simulations, this suggests the forest-based outcome model is better able to adapt once nonlinear structure becomes more prominent.
+- **AIPW** maintains relatively small bias over much of the grid, though both bias and RMSE rise as $\alpha$ increases, suggesting that its performance becomes less stable when the outcome model is harder to estimate well.
+- **DML** remains close to zero bias throughout and appears relatively robust overall. Its RMSE does increase with $\alpha$, but the deterioration is gradual rather than sharp.
 
 ---
 

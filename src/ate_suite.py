@@ -77,12 +77,14 @@ def dml(Y, T, X, seed=SEED):
     """
     Double Machine Learning via EconML LinearDML.
     Outcome nuisance model: LassoCV (sklearn).
-    Treatment nuisance model: LassoCV (sklearn).
+    Treatment nuisance model: LogisticRegression (sklearn).
+    Treatment specified as discrete (binary) via discrete_treatment=True.
     Cross-fitting handled internally by EconML.
     """
     est = LinearDML(
         model_y=LassoCV(cv=5, random_state=seed),
-        model_t=LassoCV(cv=5, random_state=seed),
+        model_t=LogisticRegression(random_state=seed),
+        discrete_treatment=True,
         random_state=seed
     )
     est.fit(Y, T, X=X)

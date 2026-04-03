@@ -122,7 +122,8 @@ def make_highdim_dgp(n=1000, p=10, k=5, true_ate=TRUE_ATE, seed=SEED):
     -------
     Y : array (n,)   observed outcomes
     T : array (n,)   binary treatment indicator
-    X : array (n, p) pre-treatment covariates, each column iid N(0,1)
+    X : array (n, p) pre-treatment covariates; first k are iid N(0,1),
+    remaining p-k are Gaussian noise variables correlated with X0
     ps: array (n,)   true propensity scores
     """
     rng = np.random.default_rng(seed)
