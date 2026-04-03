@@ -76,24 +76,27 @@ $\alpha$. Treatment assignment is fixed throughout.
 
 ### Scenario 3: High Dimensionality
 
-The covariate space grows from $p=5$ to $p=100$ while informative covariates
-stay fixed at $k=5$. Noise covariates are weakly correlated with the primary
-confounder.
+The covariate space grows from $p=5$ to $p=100$ while the number of informative
+covariates stays fixed at $k=5$. The remaining variables have no direct effect on
+treatment or outcome, but are weakly correlated with the primary confounder.
 
 ![Bias and RMSE: Dimensionality Scenario](images/highdim_bias_rmse.png)
 
-- **OLS** and **DML** remain broadly flat throughout. OLS performs well because the DGP is linear and correctly specified, while DML’s LassoCV nuisance models down-weight noise covariates effectively.
-- **IPW** bias and RMSE drift gradually upward as correlated noise increasingly confuses propensity estimation. Without variable selection, the propensity model absorbs noise alongside signal.
-- **Flexible RO** carries the highest bias throughout, rising steadily as forest splits spread across both informative and noise covariates, diluting the signal. RMSE is systematically elevated across all $p$ values.
-- **AIPW** holds up at low $p$ but deteriorates from $p=50$ onwards on both bias and RMSE, with performance worsening sharply at $p=100$. Like IPW, its propensity component has no explicit variable selection mechanism and becomes increasingly unstable as the noise pool grows.
+- **OLS** remains the most stable estimator in this scenario, staying close to zero bias with the lowest RMSE across the grid. In this setting, the linear DGP appears to favour a correctly specified linear regression adjustment.
+- **IPW** shows a modest but fairly steady increase in both bias and RMSE as $p$ grows, suggesting that propensity estimation becomes less clean in the presence of many correlated but non-causal covariates.
+- **Flexible RO** has the highest bias throughout and worsens gradually with dimensionality. Its RMSE is also consistently elevated, which is consistent with weaker counterfactual prediction as the informative signal is diluted by an expanding pool of noise variables.
+- **AIPW** remains fairly stable at lower dimensions, but deteriorates noticeably from around $p=50$ onward, with both bias and RMSE rising sharply in the highest-dimensional settings.
+- **DML** also deteriorates as dimensionality increases. Its bias becomes increasingly negative at higher $p$, and RMSE rises steadily, suggesting that regularisation helps but does not fully protect the nuisance models from the growing noise-to-signal ratio in this design.
 
 ---
 
 ## Key Takeaway
 
-When all relevant confounders are observed, the challenge of causal inference does not disappear, it just shifts from identification to estimation.
+When all relevant confounders are observed, causal inference does not become trivial but the challenge shifts from identification to estimation.
 
-This project makes that shift explicit by showing that estimator choice is ultimately a question of which assumptions are most credible, and which failure modes are most tolerable, in a given data environment.
+Across these simulations, estimator performance depends strongly on which feature of the data-generating process is under stress. Methods that perform well under strong overlap may become unstable when overlap weakens; methods that rely on simple outcome models may struggle as functional form becomes more nonlinear; and methods that depend on nuisance estimation can deteriorate in high-dimensional settings with many correlated but non-causal covariates.
+
+The main lesson is not that one estimator dominates everywhere, but that different estimators appear sensitive to different structural weaknesses. In the selection-on-observables setting, estimator choice is therefore less about finding a universally best method and more about matching the method to the data environment and its likely failure modes.
 
 ---
 
