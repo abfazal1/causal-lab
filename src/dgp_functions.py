@@ -132,8 +132,8 @@ def make_highdim_dgp(n=1000, p=10, k=5, true_ate=TRUE_ATE, seed=SEED):
     X_informative = rng.standard_normal((n, k))
 
     # p-k noise covariates weakly correlated with X0 (the confounder)
-    # rho controls correlation strength — enough to confuse naive methods
-    rho = 0.3
+    # rho controls correlation strength
+    rho = 0.2
     noise_base = rng.standard_normal((n, p - k))
     X_noise = rho * X_informative[:, [0]] + np.sqrt(1 - rho**2) * noise_base
 
