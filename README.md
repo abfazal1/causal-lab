@@ -85,7 +85,7 @@ treatment or outcome, but are weakly correlated with the primary confounder.
 - **OLS** remains the most stable estimator in this scenario, staying close to zero bias with the lowest RMSE across the grid. In this setting, the linear DGP appears to favour a correctly specified linear regression adjustment.
 - **IPW** shows a modest but fairly steady increase in both bias and RMSE as $p$ grows, suggesting that propensity estimation becomes less clean in the presence of many correlated but non-causal covariates.
 - **Flexible RO** has the highest bias throughout and worsens gradually with dimensionality. Its RMSE is also consistently elevated, which is consistent with weaker counterfactual prediction as the informative signal is diluted by an expanding pool of noise variables.
-- **AIPW** remains fairly stable at lower dimensions, but deteriorates noticeably from after $p=50$, with both bias and RMSE rising sharply in the highest-dimensional settings.
+- **AIPW** remains fairly stable at lower dimensions, but deteriorates noticeably from after $p=50$, with both bias and RMSE rising sharply in the highest-dimensional settings. As the noise pool grows the propensity model gains spurious predictive power, producing heavier weight tails that destabilise the IPW correction term.
 - **DML** also deteriorates as dimensionality increases. Its bias drifts increasingly negative at higher $p$ as the logistic treatment nuisance model absorbs spurious predictive power from correlated noise covariates, attenuating the treatment residuals and pulling the effect estimate downward. RMSE rises steadily in line with this drift.
 
 ---
