@@ -22,7 +22,7 @@ In practice, however, this “easy case” is often less straightforward than it
 
 This project stress-tests five popular ATE estimators under controlled synthetic DGPs where the ground truth is known. Each scenario isolates a single structural feature and varies it systematically while holding the others fixed, making it easier to relate estimator performance to specific design features rather than incidental quirks of the data.
 
-> When identification is available under selection on observables, which estimators remain most reliable as key structural features of the data — overlap, functional form, and dimensionality — are systematically stressed?
+> When identification is available under selection on observables, which estimators remain most reliable as key structural features of the data (propensity overlap, functional form, and dimensionality) are systematically stressed?
 
 ---
 
